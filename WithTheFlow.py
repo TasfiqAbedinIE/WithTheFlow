@@ -3,6 +3,7 @@ from main import *
 import time
 import todo_functions
 import os
+from datetime import datetime
 
 ## If todos.txt file does not exist
 
@@ -21,7 +22,8 @@ clock = sg.Text(key="clock")
 todo_title = sg.Text("Enter TODO")
 pomo_time = sg.Text("00:00", font=(40))
 
-input_box = sg.InputText(tooltip="Enter TODO", key="todo", size=(33, 2), pad=((10, 0), (0, 20)), font=("Bahnschrift", 15))
+input_box = sg.InputText(tooltip="Enter TODO", key="todo", size=(33, 2), pad=((10, 0), (0, 20)),
+                         font=("Bahnschrift", 15))
 list_box = sg.Listbox(values=todo_functions.get_todos(), key="todos",
                       enable_events=True, size=(47, 10))
 # input_box_pomo = sg.InputText(tooltip="Enter Work time", key="pomo_time", size=(5), pad=((0, 0), (0, 200)))
@@ -35,11 +37,10 @@ pomo_start_button = sg.Button("Start", size=(10), pad=((10, 0), (0, 30)))
 pomo_break_button = sg.Button("Break", size=(10), pad=((10, 0), (0, 30)))
 
 top_row = ["TASK", "START TIME", "END TIME"]
-rows = [["Easting", "10PM", "10:30PM"],
-        ["Praying", "10:45", "11:15PM"],
-        ["Sleeping with all the emotion and remembering Almighty", "12AM", "4:25AM"]]
-task_table = sg.Table(values=rows, headings=top_row, max_col_width=40, auto_size_columns=True, display_row_numbers=False, justification="center",
-                      pad=((10, 0), (0, 15)), expand_x=True, expand_y=True)
+table_rows = []
+task_table = sg.Table(values=table_rows, headings=top_row, max_col_width=40, auto_size_columns=False,
+                      display_row_numbers=False, justification="center",
+                      pad=((10, 0), (0, 15)), expand_x=True, expand_y=True, key="--TABLE--", col_widths=[40, 10, 10])
 
 gap_element = sg.Text("     ")
 
@@ -60,7 +61,7 @@ pomodoro = [[pomo_start_button, pomo_break_button],
 layout = [[temp_section],
           [sg.HSeparator()],
           [sg.Column(todo), sg.VSeparator(), sg.Column(pomodoro)],
-          [sg.HSeparator(pad=((0,0),(20,0)))],
+          [sg.HSeparator(pad=((0, 0), (20, 0)))],
           [sg.Push(), exit_button]]
 
 ## WINDOW object to run the app ##
@@ -72,6 +73,7 @@ while True:
     event, values = window.read(timeout=200)
     clock_now = time.strftime("%b %d, %Y    %H:%M:%S")
     window["clock"].update(clock_now)
+    # print(event, values)
 
     if event == "EXIT" or event == sg.WIN_CLOSED:
         break
@@ -86,7 +88,7 @@ while True:
 
     elif event == "Edit":
         try:
-            todo_to_edit= values["todos"][0]
+            todo_to_edit = values["todos"][0]
             new_todo = values["todo"] + "\n"
 
             todos = todo_functions.get_todos()
@@ -119,3 +121,40 @@ while True:
             window["todo"].update(value=values["todos"][0])
         except IndexError:
             sg.popup("Nothing to select", font=("Bahnschrift", 14), title="Warning")
+    elif event == "Start":
+        try:
+            time_now = datetime.now()
+            # print(time_now)
+            task = values["todos"][0]
+            # print(type(time_now))
+            # print(task)
+
+            complete_task = [task, time_now.strftime("%H:%M:%S"), ""]
+            # print(complete_task)
+
+            table_rows.append(complete_task)
+            window["--TABLE--"].update(values=table_rows)
+
+            if table_rows[len(table_rows) - 2][2] == "" and table_rows[len(table_rows) - 2][0] != values["todos"][0]:
+                table_rows[len(table_rows) - 2][2] = time_now.strftime("%H:%M:%S")
+                window["--TABLE--"].update(values=table_rows)
+
+            # print(table_rows)
+
+        except IndexError:
+            sg.popup("Please select any TODO", font=("Bahnschrift", 14), title="Warning")
+
+    elif event == "Break":
+        time_now = datetime.now()
+        # print(time_now)
+        complete_task = ["BREAK", time_now.strftime("%H:%M:%S"), ""]
+        # print(complete_task)
+
+        table_rows.append(complete_task)
+        window["--TABLE--"].update(values=table_rows)
+
+        if table_rows[len(table_rows) - 2][2] == "":
+            table_rows[len(table_rows) - 2][2] = time_now.strftime("%H:%M:%S")
+            window["--TABLE--"].update(values=table_rows)
+
+        # print(table_rows)
