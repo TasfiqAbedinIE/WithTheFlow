@@ -4,6 +4,7 @@ import time
 import todo_functions
 import os
 from datetime import datetime
+from word_meaning import *
 
 ## If todos.txt file does not exist
 
@@ -21,11 +22,15 @@ hum = sg.Text(f"HUM: {humidity}", key="hum")
 clock = sg.Text(key="clock")
 todo_title = sg.Text("Enter TODO")
 pomo_time = sg.Text("00:00", font=(40))
+heading1 = sg.Text("Track your activity -", pad=((10, 0), (0, 10)))
+heading2 = sg.Text("SEARCH WORD MEANING")
 
 input_box = sg.InputText(tooltip="Enter TODO", key="todo", size=(33, 2), pad=((10, 0), (0, 20)),
                          font=("Bahnschrift", 15))
 list_box = sg.Listbox(values=todo_functions.get_todos(), key="todos",
                       enable_events=True, size=(47, 10))
+word_box = sg.InputText(tooltip="Enter WORD", key="word", size=(33, 2), pad=((10, 0), (20, 20)),
+                        font=("Bahnschrift", 15))
 # input_box_pomo = sg.InputText(tooltip="Enter Work time", key="pomo_time", size=(5), pad=((0, 0), (0, 200)))
 # input_box_pomo_break = sg.InputText(tooltip="Enter Break time", key="pomo_break", size=(5), pad=((0, 0), (0, 200)))
 
@@ -35,12 +40,19 @@ complete_button = sg.Button("Complete", size=(10), pad=((5, 0), (20, 0)))
 exit_button = sg.Button("EXIT")
 pomo_start_button = sg.Button("Start", size=(10), pad=((10, 0), (0, 30)))
 pomo_break_button = sg.Button("Break", size=(10), pad=((10, 0), (0, 30)))
+search_button = sg.Button("SEARCH", size=(10), pad=((10, 0), (0, 0)))
 
 top_row = ["TASK", "START TIME", "END TIME"]
 table_rows = []
 task_table = sg.Table(values=table_rows, headings=top_row, max_col_width=40, auto_size_columns=False,
                       display_row_numbers=False, justification="center",
                       pad=((10, 0), (0, 15)), expand_x=True, expand_y=True, key="--TABLE--", col_widths=[40, 10, 10])
+definitions_row = []
+word_meaning_table = sg.Table(values=definitions_row, headings=["DEFINITIONS"], max_col_width=40,
+                              auto_size_columns=False,
+                              display_row_numbers=False, justification="left",
+                              pad=((10, 0), (0, 5)), expand_x=True, expand_y=True, key="--WORD_TABLE--",
+                              col_widths=[40], num_rows=5, )
 
 gap_element = sg.Text("     ")
 
@@ -54,19 +66,24 @@ todo = [[todo_title],
         [list_box],
         [edit_button, complete_button]]
 
-pomodoro = [[pomo_start_button, pomo_break_button],
+pomodoro = [[heading1],
+            [pomo_start_button, pomo_break_button],
             [task_table],
             ]
+word_meaning_section = [[heading2],
+                        [word_box, search_button],
+                        [word_meaning_table]]
 
 layout = [[temp_section],
           [sg.HSeparator()],
           [sg.Column(todo), sg.VSeparator(), sg.Column(pomodoro)],
           [sg.HSeparator(pad=((0, 0), (20, 0)))],
+          [word_meaning_section],
           [sg.Push(), exit_button]]
 
 ## WINDOW object to run the app ##
 
-window = sg.Window("WITH THE FLOW", layout=layout, size=(1200, 700), element_padding=((10, 10), (5, 0)),
+window = sg.Window("WITH THE FLOW", layout=layout, size=(1200, 750), element_padding=((10, 10), (5, 0)),
                    font=("Bahnschrift", 12), icon=r"icon.ico")
 
 while True:
@@ -158,3 +175,20 @@ while True:
             window["--TABLE--"].update(values=table_rows)
 
         # print(table_rows)
+
+    elif event == "SEARCH":
+        word_meaning = fetch_word_meaning(values['word'])
+        # print(word_meaning)
+        if word_meaning != "Failed to fetch data":
+            key_to_extract = 'definition'
+            meaning_list = word_meaning[0]['meanings'][0]['definitions']
+            definitions = []
+            for keys in meaning_list:
+                if key_to_extract in keys:
+                    definitions.append(keys[key_to_extract])
+
+            definitions_row = [[elements] for elements in definitions]
+            # print(definitions_row)
+            window["--WORD_TABLE--"].update(values=definitions_row)
+        else:
+            sg.popup("Sorry couldn't find any meaning of your given word. please retry")
